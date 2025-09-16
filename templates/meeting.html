@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Zoom バーチャルオフィス</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; }
+        #loading-text { margin-top: 50px; font-size: 20px; }
+    </style>
+    <script src="https://source.zoom.us/zoom-sdk-meeting-6.5.10.js"></script>
+</head>
+<body>
+    <h1>バーチャルオフィスにようこそ</h1>
+    <p id="loading-text">ミーティングに参加しています...</p>
+    <div id="zmmtg-root"></div>
+    <script>
+        console.log("スクリプトの実行を開始します");
+
+        // ブラウザから直接アクセスするときのセキュリティ警告を非表示にする
+        console.log("ZoomMtg.preLoadWasm()を呼び出します");
+        ZoomMtg.preLoadWasm();
+        console.log("ZoomMtg.prepareJssdk()を呼び出します");
+        ZoomMtg.prepareJssdk();
+        console.log("JSSDKの準備が完了しました");
+
+        const userName = '参加者';
+        const passWord = ''; // 会議にパスワードを設定した場合のみ
+
+        console.log("Meeting SDKを初期化しています");
+
+        // トークンを取得し、ミーティングに参加する
+        async function joinMeeting() {
+            console.log("joinMeeting関数が呼び出されました");
+            try {
+                // FlaskサーバーのAPIを呼び出してJWTトークンを取得
+                console.log("サーバーからトークンを取得中...");
+                const tokenResponse = await fetch('/meeting_sdk_token', { method: 'POST' });
+                console.log('トークンレスポンス:', tokenResponse);
+                if (!tokenResponse.ok) {
+                    console.error('トークン取得に失敗しました。ステータス:', tokenResponse.status);
+                    return;
+                }
+                const tokenData = await tokenResponse.json();
+                const jwtToken = tokenData.token;
+                const meetingNumber = tokenData.meeting_number;
+                const sdkKey = tokenData.sdkKey;
+
+                // ZoomMtg.initを実行
+                console.log('ZoomMtg.init を呼び出します...');
+                ZoomMtg.init({
+                    leaveUrl: window.location.origin,
+                    success: function() {
+                        console.log("ZoomMtg.initが成功しました");
+                        document.getElementById('loading-text').style.display = 'none';
+                        // ミーティングに参加
+                        console.log('ZoomMtg.join を呼び出します...');
+                        ZoomMtg.join({
+                            sdkKey: sdkKey,
+                            signature: jwtToken,
+                            meetingNumber: meetingNumber,
+                            userName: userName,
+                            passWord: passWord,
+                            success: function (res) {
+                                console.log('参加に成功しました！', res);
+                            },
+                            error: function (res) {
+                                console.error('参加に失敗しました:', res);
+                            }
+                        });
+                    },
+                    error: function (res) {
+                        console.error('初期化に失敗しました:', res);
+                    }
+                });
+            } catch (error) {
+                console.error('通信エラー:', error);
+            }
+        }
+        
+        // ページ読み込み時にミーティングに参加
+        console.log("joinMeeting()を呼び出します");
+        joinMeeting();
+        console.log("スクリプトの実行を終了します");
+    </script>
+</body>
+</html>
+
