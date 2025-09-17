@@ -1,6 +1,5 @@
-from app import app as application
+from app import app
 
-# Vercel Python runtime (serverless) will look for `app` or `application`.
-# Expose both for compatibility.
-app = application
+# Vercel Python runtime (serverless) will look for `app`.
+# This is the WSGI application entry point.
 
